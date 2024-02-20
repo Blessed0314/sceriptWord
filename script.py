@@ -1,22 +1,35 @@
+import openpyxl
+import os
+import subprocess
 from docx import Document
 from pathlib import Path
 '''
-Esta primera parte del código es para generar un documento de word 
-la idea es que el nombre del documento lo tome de la interfaz grafica, asi mismo
-como también el directorio donde se va a guardar. 
+Función para obtener almacenar en variables los directorios de las carpetas y para crear el documento donde se guardara el archivo final.
 '''
+def get_folders(targetDir, finalDir, docName):
 
-finalDoc = Document() # Creamos el objeto documento doonse se almacenara toda la info
-docName = "blanco" # Nombre del documento 
-docDir = "C:/Users/user/Desktop/Trabajos/scriptWord/DocumentosGenerados/"+ docName + ".docx"
+  global finalDoc, docDir, targetDocs #Creamos las variables que se usaran en el script en forma global
+  finalDoc = Document() # Creamos el objeto documento donde se almacenara toda la info
+  docDir = targetDir + docName + ".docx" # Directorio donde se guardará el documento final
+  targetDocs = targetDir #Directorio donde están los programas academicos
 
-
-'''
-Directorio donde se obtendrán los documentos para ser fusionados, la
-idea es que esta carpeta se pueda seleccionar desde la interfaz
-'''
-targetDocs = "C:/Users/user/Desktop/Trabajos/scriptWord/DocumentosObjetivos"
-
+#Funcion que crea un excel base para que se copien las asignaturas y las notas de las mismas
+def createTemplate ():
+  template = openpyxl.Workbook()#Creamos el objeto o documento de excel
+  sheet1 = template.active #Cargamos la primera hoja del excel
+  sheet1[A1] = 'Asignatura' #Colocamos el titulo a la primera celda
+  sheet1[A2] = 'Nota' #Colocamos el titulo a la segunda celda
+  excelName = 'Plantilla.xlsx'
+  template.save(excelName)
+  template.close()
+  
+  # Abrir el archivo Excel recién creado
+  # Comprobar si estamos en Windows
+  if os.name == 'nt':  
+    subprocess.Popen(['start', 'excel', excelName], shell=True)
+  # Comprobar si estamos en sistemas basados en Unix/Linux
+  elif os.name == 'posix':  
+    subprocess.Popen(['xdg-open', excelName])
 
 # Función para copiar párrafos
 def copy_paragraphs(source_paragraphs, target_document):
@@ -40,7 +53,6 @@ def copy_tables(source_tables, target_document):
                 new_table.cell(i, j).paragraphs[0].runs[0].font.size = cell.paragraphs[0].runs[0].font.size
 
 # Consolidación de documentos de Word
-
 root = Path(targetDocs)
 
 for doc_path in root.rglob('[!.]*.docx'):
@@ -51,3 +63,6 @@ for doc_path in root.rglob('[!.]*.docx'):
     
 # Guardar el documento final
 finalDoc.save(docDir)
+
+
+  
