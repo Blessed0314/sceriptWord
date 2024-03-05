@@ -17,8 +17,8 @@ def get_folders(targetDir, finalDir, docName):
 def createTemplate ():
   template = openpyxl.Workbook()#Creamos el objeto o documento de excel
   sheet1 = template.active #Cargamos la primera hoja del excel
-  sheet1[A1] = 'Asignatura' #Colocamos el titulo a la primera celda
-  sheet1[A2] = 'Nota' #Colocamos el titulo a la segunda celda
+  sheet1['A1'] = 'Asignatura' #Colocamos el titulo a la primera celda
+  sheet1['A2'] = 'Nota' #Colocamos el titulo a la segunda celda
   excelName = 'Plantilla.xlsx'
   template.save(excelName)
   template.close()
