@@ -1,24 +1,27 @@
-import openpyxl
-import os
-import subprocess
+import openpyxl, os, subprocess, pandas as pd
 from docx import Document
 from pathlib import Path
+
+
 '''
 Función para obtener almacenar en variables los directorios de las carpetas y para crear el documento donde se guardara el archivo final.
 '''
 def get_folders(targetDir, finalDir, docName):
-
   global finalDoc, docDir, targetDocs #Creamos las variables que se usaran en el script en forma global
   finalDoc = Document() # Creamos el objeto documento donde se almacenara toda la info
-  docDir = targetDir + docName + ".docx" # Directorio donde se guardará el documento final
+  docDir = finalDir + docName + ".docx" # Directorio donde se guardará el documento final
   targetDocs = targetDir #Directorio donde están los programas academicos
 
 #Funcion que crea un excel base para que se copien las asignaturas y las notas de las mismas
 def createTemplate ():
   template = openpyxl.Workbook()#Creamos el objeto o documento de excel
   sheet1 = template.active #Cargamos la primera hoja del excel
-  sheet1[A1] = 'Asignatura' #Colocamos el titulo a la primera celda
-  sheet1[A2] = 'Nota' #Colocamos el titulo a la segunda celda
+  sheet1['A1'] = 'Asignatura' #Colocamos el titulo a la primera celda
+  sheet1.column_dimensions['A'].width = 50
+  sheet1['B1'] = 'Nota' #Colocamos el titulo a la segunda celda
+  sheet1.column_dimensions['B'].width = 10
+  sheet1['C1'] = 'Status copy' #Colocamos el titulo a la tercera celda
+  sheet1.column_dimensions['C'].width = 15
   excelName = 'Plantilla.xlsx'
   template.save(excelName)
   template.close()
@@ -28,7 +31,7 @@ def createTemplate ():
   if os.name == 'nt':  
     subprocess.Popen(['start', 'excel', excelName], shell=True)
   # Comprobar si estamos en sistemas basados en Unix/Linux
-  elif os.name == 'posix':  
+  if os.name == 'posix':  
     subprocess.Popen(['xdg-open', excelName])
 
 # Función para copiar párrafos
@@ -53,16 +56,35 @@ def copy_tables(source_tables, target_document):
                 new_table.cell(i, j).paragraphs[0].runs[0].font.size = cell.paragraphs[0].runs[0].font.size
 
 # Consolidación de documentos de Word
-root = Path(targetDocs)
+def runScript (targetDir, finalDir, docName, excelDir):
+  get_folders(targetDir, finalDir, docName)
+  root = Path(targetDocs)
+  #plantilla.xlsx es la ruta del excel, se debe reemplazar por la variable
+  df = pd.read_excel(excelDir, sheet_name='Sheet', header = 0)
+  # Se elimina los espacios que se coloquen por error en el contenido de las columnas
+  df = df.map(lambda x: x.strip() if isinstance(x, str) else x)
 
-for doc_path in root.rglob('[!.]*.docx'):
-    doc = Document(doc_path)
-    copy_paragraphs(doc.paragraphs, finalDoc)
-    copy_tables(doc.tables, finalDoc)
-    finalDoc.add_page_break() # Inserta un salto de pagina después de cada documento
-    
-# Guardar el documento final
-finalDoc.save(docDir)
+# Iterar sobre las filas del DataFrame
+  for index, row in df.iterrows():
+      asignatura = row['Asignatura']
+      nota = row['Nota']
+      
+      # Buscar archivos en la carpeta que coincidan con el nombre de asignatura y tengan nota >= 3
+      for doc_path in root.rglob(f'{asignatura}*.docx'):
+          if nota >= 3:
+              # Procesar el documento
+              doc = Document(doc_path)
+              copy_paragraphs(doc.paragraphs, finalDoc)
+              copy_tables(doc.tables, finalDoc)
+              finalDoc.add_page_break() # Insertar un salto de página después de cada documento
 
+  # Guardar el documento final
+  finalDoc.save(docDir)
+  
+targetDir = 'C:/Users/user/Desktop/Trabajos/scriptWord/DocumentosObjetivos'
+finalDir = 'C:/Users/user/Desktop/Trabajos/scriptWord/DocumentoFusionado/'
+docName = 'Ana'
+excelDir = 'C:/Users/user/Desktop/Trabajos/scriptWord/Plantilla.xlsx'
+runScript(targetDir, finalDir, docName, excelDir)
 
   
