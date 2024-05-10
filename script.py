@@ -12,7 +12,10 @@ def get_folders(targetDir, finalDir, docName):
   targetDocs = targetDir
   return finalDoc, docDir, targetDocs
 
-def adjust_column_widths(sheet):
+def adjust_column_widths(excel_path):
+    workbook = openpyxl.load_workbook(excel_path)
+    sheet = workbook.active
+
     for column in sheet.columns:
         max_length = 0
         column = [cell for cell in column]
@@ -24,8 +27,9 @@ def adjust_column_widths(sheet):
                 pass
         adjusted_width = (max_length + 2)
         sheet.column_dimensions[column[0].column_letter].width = adjusted_width
-#Funcion que crea un excel base para que se copien las asignaturas y las notas de las mismas
 
+    workbook.save(excel_path)
+    workbook.close()
 
 def create_template():
     template = openpyxl.Workbook()
