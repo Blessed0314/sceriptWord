@@ -2,13 +2,14 @@ import openpyxl, os, subprocess, pandas as pd
 from docx import Document
 from pathlib import Path
 
+
 EXCEL_NAME = 'Plantilla.xlsx'
 COLUMN_TITLES = ['Asignatura', 'Nota', 'Status copy']
 COLUMN_WIDTHS = [50, 10, 15]
 
 def get_folders(targetDir, finalDir, docName):
   finalDoc = Document()
-  docDir = finalDir + docName + ".docx"
+  docDir = finalDir + "/" + docName + ".docx"
   targetDocs = targetDir
   return finalDoc, docDir, targetDocs
 
@@ -115,6 +116,7 @@ def run_script(targetDir, finalDir, docName, excelDir):
 
         if nota >= 3 and not archivo_encontrado:
             finalDoc.add_paragraph(f'Falta archivo: {asignatura}')
+            finalDoc.add_page_break()
             df.at[index, 'Status copy'] = 'Falta archivo'
 
     # Guardar el documento final
@@ -125,11 +127,3 @@ def run_script(targetDir, finalDir, docName, excelDir):
     adjust_column_widths(excelDir)
     open_excel(excelDir)
 
-
-targetDir = 'C:/Users/user/Desktop/Trabajos/scriptWord/DocumentosObjetivos'
-finalDir = 'C:/Users/user/Desktop/Trabajos/scriptWord/DocumentoFusionado/'
-docName = 'Ana Maria'
-excelDir = 'C:/Users/user/Desktop/Trabajos/scriptWord/Plantilla.xlsx'
-
-#create_template()
-run_script(targetDir, finalDir, docName, excelDir)

@@ -1,130 +1,190 @@
+import os
+import sys
+
 import tkinter as tk
+import tkinter.messagebox as messagebox
+import script
+
+from tkinter import ttk, filedialog
 from tkinter import filedialog
-from tkinter import ttk
-from openpyxl import load_workbook
 
-# Funciones de la interfaz
+def download_template(button):
+    try:
+        # Intentar descargar la plantilla
+        script.create_template()
+    except Exception as e:
+        # Si ocurre un error, mostrar un mensaje al usuario
+        tk.messagebox.showerror("Error", "No se pudo descargar la plantilla. Por favor, cierra el archivo Excel y vuelve a intentarlo.")
 
-#Función para llenar el entry y guardarlo en la variable path del script
-def fill_entry(path, entry):
-    entry.config(state='normal')
+def select_directory(entry, button, key):
+    # Solicitar al usuario que seleccione un directorio
+    if key == 'excel_path':
+        directory = filedialog.askopenfilename(filetypes=[('Excel Files', '*.xlsx')])
+    else:
+        directory = filedialog.askdirectory()
+
+    # Actualizar el campo de entrada con el directorio seleccionado
+    entry.config(state="normal")
     entry.delete(0, tk.END)
-    entry.insert(0, path)
-    entry.config(state='disabled')
+    entry.insert(0, directory)
+    entry.config(state="disabled")
 
-#Función para obtener el directorio
-def select_directory(entry, button):
-    path = filedialog.askdirectory()
-    fill_entry(path, entry)
-    if entry.get():
-        button.config(text="Change")
+    # Cambiar el texto del botón
+    button.config(text="Change")
 
-#Función para seleccionar el archivo excel
-def select_excel(entry, button):
-    path = filedialog.askopenfilename(filetypes=[('Excel Files', '*.xlsx')])
-    fill_entry(path, entry)
-    if entry.get():
-        button.config(text="Change")
-        
+    # Actualizar el diccionario con el nuevo path
+    paths[key] = directory
 
-# Crear una ventana 
+def create_input_field_button(ventana, row, label_text, button_text, command, key, entry_state="normal"):
+    # Etiqueta
+    label = tk.Label(ventana, text=label_text)
+    label.grid(row=row, column=0, padx=10, columnspan=2, sticky='w')
+
+    # Campo de texto
+    entry = tk.Entry(ventana, width=50, state=entry_state)
+    entry.grid(row=row+1, column=1, sticky='w')
+
+    # Botón
+    button = tk.Button(ventana, text=button_text)
+    button.grid(row=row+1, column=0, padx=10, sticky='w')
+
+    # Asignar la función command al botón después de que button se ha definido
+    def command_with_args():
+        command(entry, button, key)
+    button['command'] = command_with_args
+
+    return entry, button
+
+def create_input_field_no_button(ventana, row, label_text, key, entry_state="normal"):
+    # Etiqueta
+    label = tk.Label(ventana, text=label_text)
+    label.grid(row=row, column=0, padx=10, columnspan=2, sticky='w')
+
+    # Campo de texto
+    entry = tk.Entry(ventana, width=50, state=entry_state)
+    entry.grid(row=row+1, column=1, sticky='w')
+
+    # Actualizar el diccionario con el valor de la entrada cuando se modifica
+    def update_dict(event=None):
+        paths[key] = entry.get()
+    entry.bind("<FocusOut>", update_dict)
+
+    return entry, update_dict
+
+def create_button(window, row, label_text, button_text, command):
+    # Crear la etiqueta
+    label = tk.Label(window, text=label_text)
+    label.grid(row=row, column=0, padx=10, columnspan=2, sticky='w')
+
+    # Crear el botón
+    button = tk.Button(window, text=button_text)
+
+    # Asignar la función command al botón después de que button se ha definido
+    def command_with_args():
+        command(button)
+    button['command'] = command_with_args
+
+    button.grid(row=row+1, column=0, columnspan=2)
+    
+
+def create_separator(ventana, row):
+    # Separador
+    separator = ttk.Separator(ventana, orient='horizontal')
+    separator.grid(row=row, column=0, columnspan=2, sticky='ew', padx=5, pady=5)
+
+def start_processing():
+    update_docName()
+    # Bloquear la ventana
+    try:
+        # Deshabilitar la ventana
+        ventana.withdraw()
+
+        # Llamar a script.run_script con los argumentos del diccionario
+        script.run_script(paths.get('target_path'), paths.get('dest_path'), paths.get('doc_name'), paths.get('excel_path'))
+    except Exception as e:
+        # Mostrar un mensaje de alerta si ocurre una excepción
+        messagebox.showerror("Error", "Ha ocurrido un error. Por favor, revise las recomendaciones dadas.")
+    finally:
+        # Habilitar la ventana de nuevo
+        ventana.deiconify()
+
+# Preparamos el logo para la ventana
+if getattr(sys, 'frozen', False):
+    # Estamos en un paquete congelado
+    logo_path = os.path.join(sys._MEIPASS, 'logo.png')
+else:
+    # Estamos en un entorno normal de Python
+    logo_path = os.path.join(os.path.dirname(__file__), 'logo.png')
+
+# Crear la ventana
 ventana = tk.Tk()
-icono = tk.PhotoImage(file="logo.png")
-
-# Titulo e icono de la ventana
-ventana.title("Generador de Documentos")
-ventana.iconphoto(True, icono)
-
-# Parametros de la ventana
-ventana.geometry("405x500")
-ventana.columnconfigure(1, weight=1)
+ventana.title("Generador de documentos")
+ventana.iconphoto(False, tk.PhotoImage(file=logo_path))
+ventana.geometry("395x615")
 ventana.resizable(False, False)
 
-# Primer bloque, selección del path de los archivos a fusionar
+paths = {}
 
-# Etiqueta
-label_target = tk.Label(ventana, text="Paso 1: Selecciona el directorio de los programas académicos")
-label_target.grid(row=0, column=0, padx=10, columnspan=2, sticky='w')
+# Bloque de observaciones de la aplicación
+instructions = """
+Recomendaciones antes de usar la aplicación:
 
-# Field text para el mostrar el path
-target_entry = tk.Entry(ventana, width=50, state = "disabled")
-target_entry.grid(row=1, column=1, sticky='w')
+1. La plantilla de la hoja de cálculo es para importar el historial 
+    de  asignaturas con sus notas, al  descargar no modificarlo y 
+    no llenar nada en la columna 'status copy'.
 
-# Botón para seleccionar el directorio de los archivos a fusionar
-target_button = tk.Button(
-    ventana, 
-    text="Select Path", 
-    command=lambda: select_directory(target_entry, target_button)
+2. Al momento de ejecutar la aplicación, no puede estar ningún 
+    documento involucrado abierto, incluída la hoja de cálculo
+    y los planes programáticos.
+
+3. Por favor, verifica que los nombres de las asignaturas en la 
+    hoja de cálculo concuerden con los nombres de los archivos 
+    de los planes programáticos.
+
+Por favor, sigue las instrucciones cuidadosamente.
+"""
+create_separator(ventana, 1)
+
+instructions_label = tk.Message(ventana, text=instructions, justify=tk.LEFT)
+instructions_label.grid(row=0, column=0, columnspan=2, padx=10, pady=10)
+
+# Primer paso
+template_button = create_button(ventana, 2, "Paso 1: Descargar la plantilla de excel y llenarla", "Descargar plantilla", download_template)
+
+create_separator(ventana, 4)
+
+# Segundo paso
+excel_entry, excel_path_button = create_input_field_button(
+    ventana, 5, "Paso 2: Busca y selecciona el archivo de excel ya editado", "Select Path", select_directory, "excel_path", "disabled"
 )
-target_button.grid(row=1, column=0, padx=10, sticky='w')
 
-# Separador
-separator = ttk.Separator(ventana, orient='horizontal')
-separator.grid(row=2, column=0, columnspan=2, sticky='ew', padx=5, pady=5)
+create_separator(ventana, 7)
 
-# Segundo bloque, selección del path donde se guardara el documento final
-
-#Etiqueta
-label_dest = tk.Label(ventana, text="Paso 2: Selecciona el directorio donde se guardará el documento")
-label_dest.grid(row=3, column=0, padx=10, columnspan=2, sticky='w')
-
-# Field text para el mostrar el path
-dest_entry = tk.Entry(ventana, width=50, state = "disabled")
-dest_entry.grid(row=4, column=1, sticky='w')
-
-# Botón para seleccionar el directorio del documento final
-dest_button = tk.Button(
-    ventana, 
-    text="Select Path", 
-    command=lambda: select_directory(dest_entry, dest_button)
+# Tercer paso
+target_entry, target_button = create_input_field_button(
+    ventana, 8, "Paso 3: Selecciona el directorio de los programas académicos", "Select Path", select_directory, "target_path", "disabled"
 )
-dest_button.grid(row=4, column=0, padx=10, sticky='w')
 
-# Separador
-separator = ttk.Separator(ventana, orient='horizontal')
-separator.grid(row=5, column=0, columnspan=2, sticky='ew', padx=5, pady=5)
+create_separator(ventana, 10)
 
-# Tercer bloque, selección del nombre del documento
-
-#Etiqueta
-label_docName = tk.Label(ventana, text="Paso 3: Escriba el nombre del estudiante")
-label_docName.grid(row=6, column=0, padx=10, columnspan=2, sticky='w')
-
-# Field text para colocar el nombre del estudiante
-labelName = tk.Label(ventana, text="Nombre:")
-labelName.grid(row=7, column=0, padx=10, sticky='w')
-docName_entry = tk.Entry(ventana, width=50)
-docName_entry.grid(row=7, column=1, sticky='w')
-
-# Separador
-separator = ttk.Separator(ventana, orient='horizontal')
-separator.grid(row=8, column=0, columnspan=2, sticky='ew', padx=5, pady=5)
-
-# Cuarto bloque, selección del excel con los progranas académicos
-
-#Etiqueta
-label_list = tk.Label(ventana, text="Paso 4: Selecciona el excel con el listado de programas académicos")
-label_list.grid(row=9, column=0, padx=10, columnspan=2, sticky='w')
-
-# Field text para el mostrar el path
-list_entry = tk.Entry(ventana, width=50, state = "disabled")
-list_entry.grid(row=10, column=1, sticky='w')
-
-# Botón para seleccionar el excel
-list_button = tk.Button(
-    ventana, 
-    text="Select Excel", 
-    command=lambda: select_excel(list_entry, list_button)
+#  Cuarto paso
+dest_entry, dest_button = create_input_field_button(
+    ventana, 11, "Paso 4: Selecciona el directorio donde se guardará el documento", "Select Path", select_directory, "dest_path", "disabled"
 )
-list_button.grid(row=10, column=0, padx=10, sticky='w')
 
-# Separador
-separator = ttk.Separator(ventana, orient='horizontal')
-separator.grid(row=11, column=0, columnspan=2, sticky='ew', padx=5, pady=5)
+create_separator(ventana, 13)
 
+# Quinto paso
+docName_entry, update_docName = create_input_field_no_button(
+    ventana, 14, "Paso 5: Escriba el nombre del estudiante", "doc_name", "normal"
+)
+
+create_separator(ventana, 16)
+
+# Empezar
+start_button = tk.Button(ventana, text="Empezar", command=start_processing)
+start_button.grid(row=18, column=0, columnspan=2)
 
 # Ejecución de la aplicación
 ventana.mainloop()
-
-
 
