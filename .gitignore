@@ -1,0 +1,9 @@
+# Ignorar el archivo Plantilla.xlsx
+Plantilla.xlsx
+
+# Ignorar las carpetas DocumentosObjetivos, dist, build, DocumentosFusionado y __pycache__
+DocumentosObjetivos/
+dist/
+build/
+DocumentoFusionado/
+__pycache__/
