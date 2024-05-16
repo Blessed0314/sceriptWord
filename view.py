@@ -8,6 +8,8 @@ import script
 from tkinter import ttk, filedialog
 from tkinter import filedialog
 
+
+# Función que descargara el template de la hoja de cálculo
 def download_template(button):
     try:
         # Intentar descargar la plantilla
@@ -16,6 +18,7 @@ def download_template(button):
         # Si ocurre un error, mostrar un mensaje al usuario
         tk.messagebox.showerror("Error", "No se pudo descargar la plantilla. Por favor, cierra el archivo Excel y vuelve a intentarlo.")
 
+# Función que tiene la lógica para seleccionar un directorio y almacenarlo en el diccionario
 def select_directory(entry, button, key):
     # Solicitar al usuario que seleccione un directorio
     if key == 'excel_path':
@@ -35,6 +38,7 @@ def select_directory(entry, button, key):
     # Actualizar el diccionario con el nuevo path
     paths[key] = directory
 
+#Función para crear un botón con un input field
 def create_input_field_button(ventana, row, label_text, button_text, command, key, entry_state="normal"):
     # Etiqueta
     label = tk.Label(ventana, text=label_text)
@@ -55,6 +59,7 @@ def create_input_field_button(ventana, row, label_text, button_text, command, ke
 
     return entry, button
 
+# Función para crear solo un input field
 def create_input_field_no_button(ventana, row, label_text, key, entry_state="normal"):
     # Etiqueta
     label = tk.Label(ventana, text=label_text)
@@ -71,6 +76,7 @@ def create_input_field_no_button(ventana, row, label_text, key, entry_state="nor
 
     return entry, update_dict
 
+#Función para crear un botón
 def create_button(window, row, label_text, button_text, command):
     # Crear la etiqueta
     label = tk.Label(window, text=label_text)
@@ -86,12 +92,13 @@ def create_button(window, row, label_text, button_text, command):
 
     button.grid(row=row+1, column=0, columnspan=2)
     
-
+# Función para crear un separador
 def create_separator(ventana, row):
     # Separador
     separator = ttk.Separator(ventana, orient='horizontal')
     separator.grid(row=row, column=0, columnspan=2, sticky='ew', padx=5, pady=5)
 
+# Función para iniciar el procesamiento
 def start_processing():
     update_docName()
     # Bloquear la ventana
@@ -108,6 +115,14 @@ def start_processing():
         # Habilitar la ventana de nuevo
         ventana.deiconify()
 
+# función para verificar si todos los campos están llenos
+def check_inputs(*args):
+    # Si todos los campos están llenos, activa el botón
+    if all(value for value in paths.values()):
+        start_button.config(state=tk.NORMAL)
+    else:
+        start_button.config(state=tk.DISABLED)
+
 # Preparamos el logo para la ventana
 if getattr(sys, 'frozen', False):
     # Estamos en un paquete congelado
@@ -120,7 +135,7 @@ else:
 ventana = tk.Tk()
 ventana.title("Generador de documentos")
 ventana.iconphoto(False, tk.PhotoImage(file=logo_path))
-ventana.geometry("395x615")
+ventana.geometry("395x650")
 ventana.resizable(False, False)
 
 paths = {}
@@ -130,8 +145,8 @@ instructions = """
 Recomendaciones antes de usar la aplicación:
 
 1. La plantilla de la hoja de cálculo es para importar el historial 
-    de  asignaturas con sus notas, al  descargar no modificarlo y 
-    no llenar nada en la columna 'status copy'.
+    de  asignaturas con sus notas. Al  descargar, no modificarlo 
+    y no llenar nada en la columna 'status copy'.
 
 2. Al momento de ejecutar la aplicación, no puede estar ningún 
     documento involucrado abierto, incluída la hoja de cálculo
@@ -182,8 +197,22 @@ docName_entry, update_docName = create_input_field_no_button(
 create_separator(ventana, 16)
 
 # Empezar
-start_button = tk.Button(ventana, text="Empezar", command=start_processing)
+start_button = tk.Button(ventana, text="Empezar", command=start_processing, state=tk.DISABLED)
 start_button.grid(row=18, column=0, columnspan=2)
+
+# Label de creador
+developer_label = tk.Label(ventana, text="Developed by Christian Villegas", font=("Arial", 7, "bold italic"))
+developer_label.grid(row=19, column=0, columnspan=2)
+
+# label del correo
+email_label = tk.Label(ventana, text="christian.villegas@correounivalle.edu.co", font=("Arial", 7, "bold italic"))
+email_label.grid(row=20, column=0, columnspan=2)
+
+# Luego, puedes llamar a esta función cada vez que se actualiza un campo de entrada
+excel_entry.bind('<KeyRelease>', check_inputs)
+target_entry.bind('<KeyRelease>', check_inputs)
+dest_entry.bind('<KeyRelease>', check_inputs)
+docName_entry.bind('<KeyRelease>', check_inputs)
 
 # Ejecución de la aplicación
 ventana.mainloop()
